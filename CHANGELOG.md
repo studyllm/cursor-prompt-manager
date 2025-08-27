@@ -32,7 +32,7 @@ All notable changes to the "cursor-prompt-manager" extension will be documented 
 
 ### Commands
 - `promptManager.openPanel` - Open the prompt management panel
-- `promptManager.insertPrompt` - Quick insert prompt picker
+- `promptManager.selectPrompt` - Quick select prompt picker
 - `promptManager.createPrompt` - Create a new prompt
 - `promptManager.importPrompts` - Import prompts from JSON file
 - `promptManager.exportPrompts` - Export prompts to JSON file

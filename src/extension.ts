@@ -145,152 +145,404 @@ ${prompt.content}`;
     });
 }
 
-// Helper function for WebView-based editing
+// Helper function for enhanced WebView-based editing
 async function editPromptWithWebView(prompt: any, promptManager: any, promptProvider: any) {
+    const isNewPrompt = prompt.id === null;
+    
     const panel = vscode.window.createWebviewPanel(
         'promptEditor',
-        `Edit Prompt: ${prompt.title}`,
+        `${isNewPrompt ? '新建提示词' : `编辑提示词: ${prompt.title}`}`,
         vscode.ViewColumn.Two,
         {
             enableScripts: true,
-            retainContextWhenHidden: true
+            retainContextWhenHidden: true,
+            localResourceRoots: []
         }
     );
 
-    // HTML content for the WebView
+    // Get existing categories for autocomplete
+    const allPrompts = await promptManager.getAllPrompts();
+    const existingCategories = [...new Set(allPrompts.map((p: any) => p.category))].filter((cat): cat is string => typeof cat === 'string');
+
+    // HTML content for the enhanced WebView
     const webviewContent = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Edit Prompt</title>
+        <title>${isNewPrompt ? '新建' : '编辑'}提示词</title>
         <style>
+            :root {
+                --border-radius: 6px;
+                --spacing-xs: 4px;
+                --spacing-sm: 8px;
+                --spacing-md: 16px;
+                --spacing-lg: 24px;
+                --spacing-xl: 32px;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
             body {
                 font-family: var(--vscode-font-family);
                 color: var(--vscode-foreground);
                 background-color: var(--vscode-editor-background);
-                padding: 20px;
                 margin: 0;
+                padding: var(--spacing-lg);
+                line-height: 1.6;
             }
+
+            .header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: var(--spacing-xl);
+                padding-bottom: var(--spacing-md);
+                border-bottom: 1px solid var(--vscode-panel-border);
+            }
+
+            .header h1 {
+                margin: 0;
+                font-size: 1.5em;
+                font-weight: 600;
+                color: var(--vscode-foreground);
+            }
+
+            .status-bar {
+                display: flex;
+                align-items: center;
+                gap: var(--spacing-md);
+                font-size: 0.9em;
+            }
+
+            .auto-save-indicator {
+                padding: var(--spacing-xs) var(--spacing-sm);
+                background-color: var(--vscode-badge-background);
+                color: var(--vscode-badge-foreground);
+                border-radius: var(--border-radius);
+                font-size: 12px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .auto-save-indicator.show {
+                opacity: 1;
+            }
+
+            .word-count {
+                color: var(--vscode-descriptionForeground);
+                font-size: 12px;
+            }
+
+            .form-container {
+                max-width: 800px;
+                margin: 0 auto;
+            }
+
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--spacing-md);
+                margin-bottom: var(--spacing-lg);
+            }
+
             .form-group {
-                margin-bottom: 20px;
+                margin-bottom: var(--spacing-lg);
             }
+
+            .form-group.full-width {
+                grid-column: 1 / -1;
+            }
+
             label {
                 display: block;
-                margin-bottom: 5px;
+                margin-bottom: var(--spacing-xs);
                 font-weight: 600;
                 color: var(--vscode-input-foreground);
+                font-size: 0.9em;
             }
-            input, textarea {
+
+            .label-with-hint {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .hint {
+                font-size: 0.8em;
+                color: var(--vscode-descriptionForeground);
+                font-weight: normal;
+            }
+
+            input, textarea, select {
                 width: 100%;
-                padding: 8px 12px;
+                padding: var(--spacing-sm) var(--spacing-md);
                 border: 1px solid var(--vscode-input-border);
                 background-color: var(--vscode-input-background);
                 color: var(--vscode-input-foreground);
-                border-radius: 3px;
+                border-radius: var(--border-radius);
                 font-family: inherit;
                 font-size: 14px;
-                box-sizing: border-box;
+                transition: border-color 0.2s ease, box-shadow 0.2s ease;
             }
+
+            input:focus, textarea:focus, select:focus {
+                outline: none;
+                border-color: var(--vscode-focusBorder);
+                box-shadow: 0 0 0 2px var(--vscode-focusBorder);
+            }
+
             textarea {
-                min-height: 200px;
+                min-height: 300px;
                 resize: vertical;
                 font-family: var(--vscode-editor-font-family);
+                line-height: 1.5;
             }
-            .button-group {
-                margin-top: 30px;
+
+            .category-input-container {
+                position: relative;
+            }
+
+            .toolbar {
                 display: flex;
-                gap: 10px;
+                gap: var(--spacing-sm);
+                margin-bottom: var(--spacing-md);
             }
+
+            .toolbar-button {
+                padding: var(--spacing-xs) var(--spacing-sm);
+                border: 1px solid var(--vscode-button-border);
+                background-color: var(--vscode-button-secondaryBackground);
+                color: var(--vscode-button-secondaryForeground);
+                border-radius: var(--border-radius);
+                cursor: pointer;
+                font-size: 12px;
+                transition: background-color 0.2s ease;
+            }
+
+            .toolbar-button:hover {
+                background-color: var(--vscode-button-secondaryHoverBackground);
+            }
+
+            .button-group {
+                margin-top: var(--spacing-xl);
+                display: flex;
+                gap: var(--spacing-md);
+                justify-content: flex-end;
+            }
+
             button {
-                padding: 8px 16px;
+                padding: var(--spacing-sm) var(--spacing-lg);
                 border: none;
-                border-radius: 3px;
+                border-radius: var(--border-radius);
                 cursor: pointer;
                 font-size: 14px;
                 font-family: inherit;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                min-width: 80px;
             }
+
             .primary {
                 background-color: var(--vscode-button-background);
                 color: var(--vscode-button-foreground);
             }
+
             .primary:hover {
                 background-color: var(--vscode-button-hoverBackground);
+                transform: translateY(-1px);
             }
+
+            .primary:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
             .secondary {
                 background-color: var(--vscode-button-secondaryBackground);
                 color: var(--vscode-button-secondaryForeground);
+                border: 1px solid var(--vscode-button-border);
             }
+
             .secondary:hover {
                 background-color: var(--vscode-button-secondaryHoverBackground);
             }
-            .auto-save-indicator {
+
+            .preview {
+                background-color: var(--vscode-textBlockQuote-background);
+                border-left: 4px solid var(--vscode-textBlockQuote-border);
+                padding: var(--spacing-md);
+                margin-top: var(--spacing-md);
+                border-radius: 0 var(--border-radius) var(--border-radius) 0;
+                white-space: pre-wrap;
+                font-family: var(--vscode-editor-font-family);
+                max-height: 200px;
+                overflow-y: auto;
+            }
+
+            .error-message {
+                background-color: var(--vscode-inputValidation-errorBackground);
+                color: var(--vscode-inputValidation-errorForeground);
+                border: 1px solid var(--vscode-inputValidation-errorBorder);
+                padding: var(--spacing-sm) var(--spacing-md);
+                border-radius: var(--border-radius);
+                margin-top: var(--spacing-xs);
+                font-size: 0.9em;
+                display: none;
+            }
+
+            .shortcut-hint {
                 position: fixed;
-                top: 10px;
-                right: 10px;
-                padding: 5px 10px;
+                bottom: var(--spacing-md);
+                right: var(--spacing-md);
                 background-color: var(--vscode-notifications-background);
                 color: var(--vscode-notifications-foreground);
-                border-radius: 3px;
-                font-size: 12px;
-                opacity: 0;
-                transition: opacity 0.3s;
+                padding: var(--spacing-sm) var(--spacing-md);
+                border-radius: var(--border-radius);
+                font-size: 0.8em;
+                opacity: 0.7;
+                border: 1px solid var(--vscode-notifications-border);
             }
-            .auto-save-indicator.show {
-                opacity: 1;
+
+            @media (max-width: 600px) {
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+                
+                .header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: var(--spacing-md);
+                }
+                
+                .button-group {
+                    flex-direction: column;
+                }
             }
         </style>
     </head>
     <body>
-        <div class="auto-save-indicator" id="autoSaveIndicator">已自动保存</div>
-        
-        <form id="promptForm">
-            <div class="form-group">
-                <label for="title">标题</label>
-                <input type="text" id="title" name="title" value="${prompt.title.replace(/"/g, '&quot;')}" required>
+        <div class="header">
+            <h1>${isNewPrompt ? '🆕 新建提示词' : '✏️ 编辑提示词'}</h1>
+            <div class="status-bar">
+                <div class="auto-save-indicator" id="autoSaveIndicator">✅ 已自动保存</div>
+                <div class="word-count" id="wordCount">0 字符</div>
             </div>
-            
-            <div class="form-group">
-                <label for="category">分类</label>
-                <input type="text" id="category" name="category" value="${prompt.category.replace(/"/g, '&quot;')}" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="description">描述</label>
-                <input type="text" id="description" name="description" value="${(prompt.description || '').replace(/"/g, '&quot;')}">
-            </div>
-            
-            <div class="form-group">
-                <label for="content">提示词内容</label>
-                <textarea id="content" name="content" required>${prompt.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
-            </div>
-            
-            <div class="button-group">
-                <button type="button" class="primary" onclick="savePrompt()">保存</button>
-                <button type="button" class="secondary" onclick="closeEditor()">取消</button>
-            </div>
-        </form>
+        </div>
+
+        <div class="form-container">
+            <form id="promptForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="title">标题 *</label>
+                        <input type="text" id="title" name="title" value="${prompt.title.replace(/"/g, '&quot;')}" required placeholder="输入提示词标题">
+                        <div class="error-message" id="titleError"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="label-with-hint">
+                            <label for="category">分类 *</label>
+                            <span class="hint">选择分类或新增</span>
+                        </div>
+                        <div class="category-input-container">
+                            <select id="categorySelect" name="categorySelect" required>
+                                <option value="">请选择分类...</option>
+                                ${existingCategories.map(cat => 
+                                    `<option value="${cat.replace(/"/g, '&quot;')}" ${cat === prompt.category ? 'selected' : ''}>${cat}</option>`
+                                ).join('')}
+                                <option value="__NEW_CATEGORY__">+ 新增分类</option>
+                            </select>
+                            <input type="text" id="newCategoryInput" name="newCategoryInput" placeholder="输入新分类名称" style="display: none; margin-top: 8px;">
+                            <input type="hidden" id="category" name="category" value="${prompt.category.replace(/"/g, '&quot;')}">
+                        </div>
+                        <div class="error-message" id="categoryError"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">描述</label>
+                    <input type="text" id="description" name="description" value="${(prompt.description || '').replace(/"/g, '&quot;')}" placeholder="简短描述这个提示词的用途">
+                </div>
+                
+                <div class="form-group full-width">
+                    <div class="label-with-hint">
+                        <label for="content">提示词内容 *</label>
+                        <span class="hint">支持 Markdown 格式</span>
+                    </div>
+                    <div class="toolbar">
+                        <button type="button" class="toolbar-button" onclick="insertTemplate('role')">👤 角色设定</button>
+                        <button type="button" class="toolbar-button" onclick="insertTemplate('task')">📋 任务描述</button>
+                        <button type="button" class="toolbar-button" onclick="insertTemplate('example')">💡 示例</button>
+                        <button type="button" class="toolbar-button" onclick="insertTemplate('constraint')">⚠️ 约束条件</button>
+                        <button type="button" class="toolbar-button" onclick="togglePreview()">👁️ 预览</button>
+                    </div>
+                    <textarea id="content" name="content" required placeholder="输入你的提示词内容...">${prompt.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                    <div class="preview" id="preview" style="display: none;"></div>
+                    <div class="error-message" id="contentError"></div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="secondary" onclick="closeEditor()">取消</button>
+                    <button type="button" class="primary" id="saveButton" onclick="savePrompt()">
+                        ${isNewPrompt ? '创建提示词' : '保存修改'}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="shortcut-hint">
+            💡 Ctrl+S 快速保存 | Ctrl+Enter 保存并关闭
+        </div>
 
         <script>
             const vscode = acquireVsCodeApi();
             let autoSaveTimeout;
             let hasUnsavedChanges = false;
+            let isPreviewMode = false;
+            
+            const existingCategories = ${JSON.stringify(existingCategories)};
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', () => {
+                setupAutoSave();
+                setupCategoryDropdown();
+                setupKeyboardShortcuts();
+                setupValidation();
+                updateWordCount();
+                
+                // Focus on title for new prompts, content for existing
+                const focusElement = ${isNewPrompt} ? 
+                    document.getElementById('title') : 
+                    document.getElementById('content');
+                focusElement?.focus();
+            });
 
             // Auto-save functionality
             function setupAutoSave() {
-                const inputs = document.querySelectorAll('input, textarea');
+                const inputs = document.querySelectorAll('input, textarea, select');
                 inputs.forEach(input => {
-                    input.addEventListener('input', () => {
+                    const eventType = input.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+                    input.addEventListener(eventType, () => {
                         hasUnsavedChanges = true;
                         clearTimeout(autoSaveTimeout);
-                        autoSaveTimeout = setTimeout(autoSave, 2000);
+                        autoSaveTimeout = setTimeout(autoSave, 3000);
+                        
+                        if (input.id === 'content') {
+                            updateWordCount();
+                            if (isPreviewMode) {
+                                updatePreview();
+                            }
+                        }
                     });
                 });
             }
 
             function autoSave() {
-                if (!hasUnsavedChanges) return;
+                if (!hasUnsavedChanges || !isFormValid()) return;
                 
                 const formData = getFormData();
                 vscode.postMessage({
@@ -310,6 +562,196 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                 }, 2000);
             }
 
+            function updateWordCount() {
+                const content = document.getElementById('content').value;
+                const count = content.length;
+                document.getElementById('wordCount').textContent = count + ' 字符';
+            }
+
+            // Category dropdown handling
+            function setupCategoryDropdown() {
+                const categorySelect = document.getElementById('categorySelect');
+                const newCategoryInput = document.getElementById('newCategoryInput');
+                const hiddenCategoryInput = document.getElementById('category');
+
+                categorySelect.addEventListener('change', (e) => {
+                    const selectedValue = e.target.value;
+                    
+                    if (selectedValue === '__NEW_CATEGORY__') {
+                        // Show new category input
+                        newCategoryInput.style.display = 'block';
+                        newCategoryInput.focus();
+                        hiddenCategoryInput.value = '';
+                    } else {
+                        // Hide new category input and set selected category
+                        newCategoryInput.style.display = 'none';
+                        newCategoryInput.value = '';
+                        hiddenCategoryInput.value = selectedValue;
+                    }
+                    
+                    hasUnsavedChanges = true;
+                });
+
+                newCategoryInput.addEventListener('input', (e) => {
+                    const newCategoryValue = e.target.value.trim();
+                    hiddenCategoryInput.value = newCategoryValue;
+                    hasUnsavedChanges = true;
+                });
+
+                newCategoryInput.addEventListener('blur', () => {
+                    const newCategoryValue = newCategoryInput.value.trim();
+                    if (newCategoryValue) {
+                        // If user entered a new category, keep the input visible
+                        hiddenCategoryInput.value = newCategoryValue;
+                    } else {
+                        // If input is empty, reset to default state
+                        categorySelect.value = '';
+                        newCategoryInput.style.display = 'none';
+                        hiddenCategoryInput.value = '';
+                    }
+                });
+            }
+
+            // Keyboard shortcuts
+            function setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        if (e.key === 's') {
+                            e.preventDefault();
+                            savePrompt();
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveAndClose();
+                        }
+                    }
+                });
+            }
+
+            // Form validation
+            function setupValidation() {
+                const title = document.getElementById('title');
+                const categorySelect = document.getElementById('categorySelect');
+                const newCategoryInput = document.getElementById('newCategoryInput');
+                const content = document.getElementById('content');
+
+                title.addEventListener('blur', () => validateField('title'));
+                categorySelect.addEventListener('change', () => validateField('category'));
+                newCategoryInput.addEventListener('blur', () => validateField('category'));
+                content.addEventListener('blur', () => validateField('content'));
+            }
+
+            function validateField(fieldName) {
+                let field, value;
+                
+                if (fieldName === 'category') {
+                    // For category, check the hidden input value
+                    field = document.getElementById('category');
+                    value = field.value.trim();
+                } else {
+                    field = document.getElementById(fieldName);
+                    value = field.value.trim();
+                }
+                
+                const errorElement = document.getElementById(fieldName + 'Error');
+                let errorMessage = '';
+                
+                if (!value) {
+                    errorMessage = fieldName === 'title' ? '请输入标题' :
+                                  fieldName === 'category' ? '请选择分类' :
+                                  fieldName === 'content' ? '请输入内容' : '';
+                } else if (fieldName === 'title' && value.length > 100) {
+                    errorMessage = '标题不能超过100个字符';
+                } else if (fieldName === 'content' && value.length < 10) {
+                    errorMessage = '内容至少需要10个字符';
+                }
+
+                if (errorMessage) {
+                    errorElement.textContent = errorMessage;
+                    errorElement.style.display = 'block';
+                    
+                    // Apply error styling to the appropriate visible field
+                    if (fieldName === 'category') {
+                        const categorySelect = document.getElementById('categorySelect');
+                        const newCategoryInput = document.getElementById('newCategoryInput');
+                        if (newCategoryInput.style.display !== 'none') {
+                            newCategoryInput.style.borderColor = 'var(--vscode-inputValidation-errorBorder)';
+                        } else {
+                            categorySelect.style.borderColor = 'var(--vscode-inputValidation-errorBorder)';
+                        }
+                    } else {
+                        field.style.borderColor = 'var(--vscode-inputValidation-errorBorder)';
+                    }
+                    return false;
+                } else {
+                    errorElement.style.display = 'none';
+                    
+                    // Remove error styling from the appropriate visible field
+                    if (fieldName === 'category') {
+                        const categorySelect = document.getElementById('categorySelect');
+                        const newCategoryInput = document.getElementById('newCategoryInput');
+                        categorySelect.style.borderColor = 'var(--vscode-input-border)';
+                        newCategoryInput.style.borderColor = 'var(--vscode-input-border)';
+                    } else {
+                        field.style.borderColor = 'var(--vscode-input-border)';
+                    }
+                    return true;
+                }
+            }
+
+            function isFormValid() {
+                return validateField('title') && 
+                       validateField('category') && 
+                       validateField('content');
+            }
+
+            // Template insertion
+            function insertTemplate(type) {
+                const content = document.getElementById('content');
+                const templates = {
+                    role: '# 角色设定\\n你是一个专业的...\\n\\n',
+                    task: '# 任务描述\\n请帮我...\\n\\n',
+                    example: '# 示例\\n输入：\\n输出：\\n\\n',
+                    constraint: '# 约束条件\\n- 请确保...\\n- 注意...\\n\\n'
+                };
+
+                const template = templates[type];
+                if (template) {
+                    const cursorPos = content.selectionStart;
+                    const textBefore = content.value.substring(0, cursorPos);
+                    const textAfter = content.value.substring(cursorPos);
+                    
+                    content.value = textBefore + template + textAfter;
+                    content.focus();
+                    content.setSelectionRange(cursorPos + template.length, cursorPos + template.length);
+                    
+                    hasUnsavedChanges = true;
+                    updateWordCount();
+                }
+            }
+
+            // Preview functionality
+            function togglePreview() {
+                const preview = document.getElementById('preview');
+                const content = document.getElementById('content');
+                
+                isPreviewMode = !isPreviewMode;
+                
+                if (isPreviewMode) {
+                    updatePreview();
+                    preview.style.display = 'block';
+                    content.style.height = '150px';
+                } else {
+                    preview.style.display = 'none';
+                    content.style.height = '300px';
+                }
+            }
+
+            function updatePreview() {
+                const content = document.getElementById('content').value;
+                const preview = document.getElementById('preview');
+                preview.textContent = content || '(预览内容为空)';
+            }
+
             function getFormData() {
                 return {
                     title: document.getElementById('title').value.trim(),
@@ -320,41 +762,63 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
             }
 
             function savePrompt() {
-                const formData = getFormData();
-                
-                if (!formData.title || !formData.content || !formData.category) {
+                if (!isFormValid()) {
                     vscode.postMessage({
                         command: 'showError',
-                        message: '请填写标题、分类和内容'
+                        message: '请修正表单中的错误后再保存'
                     });
                     return;
                 }
 
+                const saveButton = document.getElementById('saveButton');
+                saveButton.disabled = true;
+                saveButton.textContent = '保存中...';
+
+                const formData = getFormData();
                 vscode.postMessage({
                     command: 'save',
                     data: formData
                 });
             }
 
+            function saveAndClose() {
+                if (isFormValid()) {
+                    const formData = getFormData();
+                    vscode.postMessage({
+                        command: 'saveAndClose',
+                        data: formData
+                    });
+                }
+            }
+
             function closeEditor() {
-                vscode.postMessage({
-                    command: 'close'
-                });
+                if (hasUnsavedChanges) {
+                    if (confirm('有未保存的修改，确定要关闭吗？')) {
+                        vscode.postMessage({ command: 'close' });
+                    }
+                } else {
+                    vscode.postMessage({ command: 'close' });
+                }
             }
 
             // Handle messages from extension
             window.addEventListener('message', event => {
                 const message = event.data;
+                const saveButton = document.getElementById('saveButton');
+                
                 switch (message.command) {
                     case 'saved':
                         hasUnsavedChanges = false;
                         showAutoSaveIndicator();
+                        saveButton.disabled = false;
+                        saveButton.textContent = '${isNewPrompt ? '创建提示词' : '保存修改'}';
+                        break;
+                    case 'error':
+                        saveButton.disabled = false;
+                        saveButton.textContent = '${isNewPrompt ? '创建提示词' : '保存修改'}';
                         break;
                 }
             });
-
-            // Initialize auto-save
-            setupAutoSave();
         </script>
     </body>
     </html>`;
@@ -365,26 +829,54 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
     panel.webview.onDidReceiveMessage(async (message) => {
         switch (message.command) {
             case 'save':
+            case 'saveAndClose':
             case 'autoSave':
                 try {
-                    await promptManager.updatePrompt({
-                        ...prompt,
-                        title: message.data.title || prompt.title,
-                        content: message.data.content || prompt.content,
-                        category: message.data.category || prompt.category,
-                        description: message.data.description || prompt.description
-                    });
+                    // Validate required fields
+                    if (!message.data.title?.trim() || !message.data.content?.trim() || !message.data.category?.trim()) {
+                        panel.webview.postMessage({ command: 'error' });
+                        vscode.window.showErrorMessage('请填写标题、分类和内容');
+                        return;
+                    }
+
+                    if (isNewPrompt) {
+                        // 新建提示词
+                        await promptManager.createPrompt({
+                            title: message.data.title.trim(),
+                            content: message.data.content.trim(),
+                            category: message.data.category.trim(),
+                            description: message.data.description?.trim() || '',
+                            tags: [],
+                            variables: []
+                        });
+                    } else {
+                        // 更新现有提示词
+                        await promptManager.updatePrompt({
+                            ...prompt,
+                            title: message.data.title.trim(),
+                            content: message.data.content.trim(),
+                            category: message.data.category.trim(),
+                            description: message.data.description?.trim() || ''
+                        });
+                    }
 
                     promptProvider.refresh();
                     
                     // Send confirmation back to webview
                     panel.webview.postMessage({ command: 'saved' });
                     
-                    if (message.command === 'save') {
-                        vscode.window.showInformationMessage(`提示词 "${message.data.title}" 已保存`);
-                        panel.dispose();
+                    if (message.command === 'save' || message.command === 'saveAndClose') {
+                        const actionText = isNewPrompt ? '创建' : '保存';
+                        vscode.window.showInformationMessage(
+                            `✅ 提示词 "${message.data.title.trim()}" ${actionText}成功！`
+                        );
+                        
+                        if (message.command === 'saveAndClose') {
+                            setTimeout(() => panel.dispose(), 500);
+                        }
                     }
                 } catch (error) {
+                    panel.webview.postMessage({ command: 'error' });
                     vscode.window.showErrorMessage(`保存失败: ${error}`);
                 }
                 break;
@@ -400,247 +892,6 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
     });
 
     return panel;
-}
-
-// Helper function for improved dialog-based editing with better UX
-async function editPromptWithImprovedDialog(prompt: any, promptManager: any, promptProvider: any) {
-    // Step 1: Edit title
-    const title = await vscode.window.showInputBox({
-        prompt: '编辑提示词标题',
-        value: prompt.title,
-        placeHolder: '输入提示词标题',
-        validateInput: (value) => {
-            if (!value?.trim()) {
-                return '标题不能为空';
-            }
-            return null;
-        }
-    });
-
-    if (title === undefined) return;
-
-    // Step 2: Edit category
-    const allPrompts = await promptManager.getAllPrompts();
-    const existingCategories = [...new Set(allPrompts.map((p: any) => p.category))].filter((cat): cat is string => typeof cat === 'string');
-    
-    const categoryItems: vscode.QuickPickItem[] = existingCategories.map((cat) => ({
-        label: cat,
-        description: '现有分类'
-    }));
-    categoryItems.push({
-        label: '$(add) 创建新分类',
-        description: '输入新的分类名称'
-    });
-
-    const categorySelection = await vscode.window.showQuickPick(categoryItems, {
-        placeHolder: '选择或创建分类',
-        matchOnDescription: true
-    });
-
-    if (!categorySelection) return;
-
-    let category;
-    if (categorySelection.label === '$(add) 创建新分类') {
-        category = await vscode.window.showInputBox({
-            prompt: '输入新分类名称',
-            value: prompt.category,
-            placeHolder: '输入分类名称',
-            validateInput: (value) => {
-                if (!value?.trim()) {
-                    return '分类不能为空';
-                }
-                return null;
-            }
-        });
-        if (category === undefined) return;
-    } else {
-        category = categorySelection.label;
-    }
-
-    // Step 3: Edit description
-    const description = await vscode.window.showInputBox({
-        prompt: '编辑描述（可选）',
-        value: prompt.description || '',
-        placeHolder: '输入提示词描述'
-    });
-
-    if (description === undefined) return;
-
-    // Step 4: Edit content in a larger input box
-    const content = await vscode.window.showInputBox({
-        prompt: '编辑提示词内容',
-        value: prompt.content,
-        placeHolder: '输入提示词内容',
-        validateInput: (value) => {
-            if (!value?.trim()) {
-                return '内容不能为空';
-            }
-            return null;
-        }
-    });
-
-    if (content === undefined) return;
-
-    // Save the updated prompt
-    try {
-        await promptManager.updatePrompt({
-            ...prompt,
-            title: title.trim(),
-            content: content.trim(),
-            category: category.trim(),
-            description: description.trim()
-        });
-
-        promptProvider.refresh();
-        vscode.window.showInformationMessage(`提示词 "${title.trim()}" 已更新`);
-    } catch (error) {
-        vscode.window.showErrorMessage(`更新失败: ${error}`);
-    }
-}
-
-// Helper function for improved editor with better save state management
-async function editPromptWithImprovedEditor(prompt: any, promptManager: any, promptProvider: any) {
-    const isNewPrompt = prompt.content === 'Enter your prompt content here...';
-    const instructionText = isNewPrompt 
-        ? '# 在下方完成新提示词内容，编辑完成后按 Ctrl+S 保存并关闭'
-        : '# 编辑提示词内容，编辑完成后按 Ctrl+S 保存并关闭';
-    
-    const tempContent = `${instructionText}
-# 修改后会自动保存，按 Ctrl+S 完成编辑
-
-标题: ${prompt.title}
-分类: ${prompt.category}
-描述: ${prompt.description || ''}
-
---- 提示词内容（在此行下方编辑）---
-${prompt.content}`;
-
-    const document = await vscode.workspace.openTextDocument({
-        content: tempContent,
-        language: 'markdown'
-    });
-
-    const editor = await vscode.window.showTextDocument(document);
-    
-    let isAutoSaving = false;
-    let hasUnsavedChanges = false;
-    let saveTimeout: NodeJS.Timeout;
-
-    // Show usage instructions
-    const message = isNewPrompt 
-        ? '新建提示词：编辑内容后按 Ctrl+S 保存并关闭编辑器' 
-        : '编辑提示词：修改内容后按 Ctrl+S 保存并关闭编辑器';
-    
-    vscode.window.showInformationMessage(message, '知道了');
-
-    // Function to parse and save content
-    const saveContent = async (markAsClean = false) => {
-        if (isAutoSaving) return;
-        isAutoSaving = true;
-
-        try {
-            const content = document.getText();
-            const lines = content.split('\n');
-            
-            let title = prompt.title;
-            let category = prompt.category;
-            let description = prompt.description || '';
-            let promptContent = '';
-            let inContentSection = false;
-            
-            for (const line of lines) {
-                if (line.startsWith('#')) continue;
-                
-                if (line.startsWith('标题: ')) {
-                    title = line.substring(3).trim();
-                } else if (line.startsWith('分类: ')) {
-                    category = line.substring(3).trim();
-                } else if (line.startsWith('描述: ')) {
-                    description = line.substring(3).trim();
-                } else if (line.includes('--- 提示词内容')) {
-                    inContentSection = true;
-                    continue;
-                } else if (inContentSection) {
-                    promptContent += (promptContent ? '\n' : '') + line;
-                }
-            }
-
-            await promptManager.updatePrompt({
-                ...prompt,
-                title: title || prompt.title,
-                content: promptContent.trim() || prompt.content,
-                category: category || prompt.category,
-                description: description
-            });
-
-            promptProvider.refresh();
-            hasUnsavedChanges = false;
-
-            // Mark document as saved if requested
-            if (markAsClean) {
-                // This will prevent the save dialog
-                await vscode.workspace.save(document.uri);
-            }
-            
-        } catch (error) {
-            console.error('Failed to save prompt:', error);
-            vscode.window.showErrorMessage(`保存失败: ${error}`);
-        } finally {
-            isAutoSaving = false;
-        }
-    };
-
-    // Listen for document changes
-    const changeDisposable = vscode.workspace.onDidChangeTextDocument(async (event) => {
-        if (event.document === document) {
-            hasUnsavedChanges = true;
-            
-            // Clear existing timeout and set new one
-            if (saveTimeout) {
-                clearTimeout(saveTimeout);
-            }
-            
-            saveTimeout = setTimeout(() => {
-                saveContent(false);
-            }, 2000);
-        }
-    });
-
-    // Listen for save command (Ctrl+S)
-    const saveDisposable = vscode.workspace.onDidSaveTextDocument(async (savedDoc) => {
-        if (savedDoc === document) {
-            await saveContent(true);
-            vscode.window.showInformationMessage(
-                isNewPrompt 
-                    ? `新提示词 "${prompt.title}" 创建成功！`
-                    : `提示词 "${prompt.title}" 更新成功！`
-            );
-            
-            // Close the editor after a short delay
-            setTimeout(() => {
-                vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-            }, 500);
-        }
-    });
-
-    // Listen for when the document is closed
-    const closeDisposable = vscode.workspace.onDidCloseTextDocument((closedDoc) => {
-        if (closedDoc === document) {
-            // Clean up event listeners
-            changeDisposable.dispose();
-            saveDisposable.dispose();
-            closeDisposable.dispose();
-            
-            if (saveTimeout) {
-                clearTimeout(saveTimeout);
-            }
-
-            // If there are unsaved changes, save them one final time
-            if (hasUnsavedChanges) {
-                saveContent(false);
-            }
-        }
-    });
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -668,7 +919,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.commands.executeCommand('workbench.view.extension.prompt-manager');
         }),
 
-        vscode.commands.registerCommand('promptManager.insertPrompt', async () => {
+        vscode.commands.registerCommand('promptManager.selectPrompt', async () => {
             const prompts = await promptManager.getAllPrompts();
             if (prompts.length === 0) {
                 vscode.window.showInformationMessage('No prompts available. Create some prompts first!');
@@ -720,95 +971,78 @@ export function activate(context: vscode.ExtensionContext) {
         }),
 
         vscode.commands.registerCommand('promptManager.insertSpecificPrompt', async (prompt) => {
-            // Copy to clipboard
-            await vscode.env.clipboard.writeText(prompt.content);
-            
-            // Show options without auto-inserting into active editor
-            const action = await vscode.window.showInformationMessage(
-                `Prompt "${prompt.title}" copied to clipboard`,
-                'Paste in Chat',
-                'Insert to Editor'
-            );
-            
-            if (action === 'Paste in Chat') {
-                try {
-                    await vscode.commands.executeCommand('workbench.action.chat.open');
-                    vscode.window.showInformationMessage('Press Cmd+V to paste in chat');
-                } catch (error) {
-                    vscode.window.showInformationMessage('Please open chat and paste the prompt (Cmd+V)');
+            try {
+                // 验证参数
+                if (!prompt) {
+                    vscode.window.showErrorMessage('No prompt data provided');
+                    return;
                 }
-            } else if (action === 'Insert to Editor') {
-                let editor = vscode.window.activeTextEditor;
-                if (!editor) {
-                    const document = await vscode.workspace.openTextDocument({
-                        content: '',
-                        language: 'plaintext'
-                    });
-                    editor = await vscode.window.showTextDocument(document);
+
+                if (!prompt.content) {
+                    vscode.window.showErrorMessage('Prompt content is empty');
+                    return;
                 }
-                await promptManager.insertPrompt(prompt, editor);
-                vscode.window.showInformationMessage(`Prompt "${prompt.title}" inserted into editor`);
+
+                if (!prompt.title) {
+                    vscode.window.showErrorMessage('Prompt title is missing');
+                    return;
+                }
+
+                // Copy to clipboard
+                await vscode.env.clipboard.writeText(prompt.content);
+                
+                // Show options without auto-inserting into active editor
+                const action = await vscode.window.showInformationMessage(
+                    `Prompt "${prompt.title}" copied to clipboard`,
+                    'Paste in Chat',
+                    'Insert to Editor'
+                );
+                
+                if (action === 'Paste in Chat') {
+                    try {
+                        await vscode.commands.executeCommand('workbench.action.chat.open');
+                        vscode.window.showInformationMessage('Press Cmd+V to paste in chat');
+                    } catch (error) {
+                        vscode.window.showInformationMessage('Please open chat and paste the prompt (Cmd+V)');
+                    }
+                } else if (action === 'Insert to Editor') {
+                    try {
+                        let editor = vscode.window.activeTextEditor;
+                        if (!editor) {
+                            const document = await vscode.workspace.openTextDocument({
+                                content: '',
+                                language: 'plaintext'
+                            });
+                            editor = await vscode.window.showTextDocument(document);
+                        }
+                        await promptManager.insertPrompt(prompt, editor);
+                        vscode.window.showInformationMessage(`Prompt "${prompt.title}" inserted into editor`);
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                        vscode.window.showErrorMessage(`Failed to insert prompt: ${errorMessage}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in insertSpecificPrompt:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                vscode.window.showErrorMessage(`Failed to process prompt: ${errorMessage}`);
             }
         }),
 
         vscode.commands.registerCommand('promptManager.createPrompt', async () => {
-            // Ask user for editing preference
-            const editMethod = await vscode.window.showQuickPick([
-                {
-                    label: '$(browser) 可视化编辑器',
-                    description: '在专用编辑器中编辑（推荐）',
-                    detail: '更好的编辑体验，支持自动保存',
-                    method: 'webview'
-                },
-                {
-                    label: '$(comment-discussion) 分步对话框',
-                    description: '通过多个对话框逐步编辑',
-                    detail: '快速简单的编辑方式',
-                    method: 'dialog'
-                },
-                {
-                    label: '$(edit) 文本编辑器',
-                    description: '在临时文档中编辑',
-                    detail: '类似传统文本编辑器的体验',
-                    method: 'editor'
-                }
-            ], {
-                placeHolder: '选择编辑方式'
-            });
-
-            if (!editMethod) return;
-
-            const title = await vscode.window.showInputBox({
-                prompt: '输入提示词标题',
-                placeHolder: '我的提示词'
-            });
-
-            if (!title) return;
-
-            // Create a basic prompt first
-            const newPrompt = await promptManager.createPrompt({
-                title,
-                content: 'Enter your prompt content here...',
-                category: 'General',
+            // Create a template for new prompt without saving
+            const newPromptTemplate = {
+                id: null, // 标识这是新建模式
+                title: '',
+                content: '',
+                category: '',
                 description: '',
                 tags: [],
                 variables: []
-            });
+            };
 
-            promptProvider.refresh();
-
-            // Edit based on user preference
-            switch (editMethod.method) {
-                case 'webview':
-                    await editPromptWithWebView(newPrompt, promptManager, promptProvider);
-                    break;
-                case 'dialog':
-                    await editPromptWithImprovedDialog(newPrompt, promptManager, promptProvider);
-                    break;
-                case 'editor':
-                    await editPromptWithImprovedEditor(newPrompt, promptManager, promptProvider);
-                    break;
-            }
+            // Directly open WebView editor in create mode
+            await editPromptWithWebView(newPromptTemplate, promptManager, promptProvider);
         }),
 
         vscode.commands.registerCommand('promptManager.editPrompt', async (treeItem) => {
@@ -819,44 +1053,8 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            // Ask user for editing preference
-            const editMethod = await vscode.window.showQuickPick([
-                {
-                    label: '$(browser) 可视化编辑器',
-                    description: '在专用编辑器中编辑（推荐）',
-                    detail: '更好的编辑体验，支持自动保存',
-                    method: 'webview'
-                },
-                {
-                    label: '$(comment-discussion) 分步对话框',
-                    description: '通过多个对话框逐步编辑',
-                    detail: '快速简单的编辑方式',
-                    method: 'dialog'
-                },
-                {
-                    label: '$(edit) 文本编辑器',
-                    description: '在临时文档中编辑',
-                    detail: '类似传统文本编辑器的体验',
-                    method: 'editor'
-                }
-            ], {
-                placeHolder: '选择编辑方式'
-            });
-
-            if (!editMethod) return;
-
-            // Edit based on user preference
-            switch (editMethod.method) {
-                case 'webview':
-                    await editPromptWithWebView(prompt, promptManager, promptProvider);
-                    break;
-                case 'dialog':
-                    await editPromptWithImprovedDialog(prompt, promptManager, promptProvider);
-                    break;
-                case 'editor':
-                    await editPromptWithImprovedEditor(prompt, promptManager, promptProvider);
-                    break;
-            }
+            // Directly open WebView editor
+            await editPromptWithWebView(prompt, promptManager, promptProvider);
         }),
 
         vscode.commands.registerCommand('promptManager.deletePrompt', async (treeItem) => {

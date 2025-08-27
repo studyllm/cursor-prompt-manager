@@ -33,11 +33,11 @@
         "title": "Open Prompt Manager",
         "category": "Prompt Manager"
       },
-      {
-        "command": "promptManager.insertPrompt",
-        "title": "Insert Prompt",
-        "category": "Prompt Manager"
-      },
+                      {
+                    "command": "promptManager.selectPrompt",
+                    "title": "Select Prompt",
+                    "category": "Prompt Manager"
+                },
       {
         "command": "promptManager.createPrompt",
         "title": "Create New Prompt",
@@ -96,7 +96,7 @@
     "menus": {
       "editor/context": [
         {
-          "command": "promptManager.insertPrompt",
+          "command": "promptManager.selectPrompt",
           "group": "1_modification",
           "when": "editorTextFocus"
         }
@@ -123,7 +123,7 @@
           "command": "promptManager.openPanel"
         },
         {
-          "command": "promptManager.insertPrompt"
+          "command": "promptManager.selectPrompt"
         },
         {
           "command": "promptManager.createPrompt"
@@ -132,7 +132,7 @@
     },
     "keybindings": [
       {
-        "command": "promptManager.insertPrompt",
+        "command": "promptManager.selectPrompt",
         "key": "ctrl+shift+i",
         "mac": "cmd+shift+i"
       },

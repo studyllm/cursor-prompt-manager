@@ -21,7 +21,7 @@ suite('Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands(true);
         const expectedCommands = [
             'promptManager.openPanel',
-            'promptManager.insertPrompt',
+            		'promptManager.selectPrompt',
             'promptManager.createPrompt',
             'promptManager.importPrompts',
             'promptManager.exportPrompts'
