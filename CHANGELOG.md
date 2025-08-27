@@ -2,6 +2,17 @@
 
 All notable changes to the "cursor-prompt-manager" extension will be documented in this file.
 
+## [0.1.1] - 2025-08-27
+
+### Changed
+- **Command Naming**: Renamed `promptManager.insertPrompt` to `promptManager.selectPrompt` for better clarity
+- **UI Labels**: Updated command title from "Insert Prompt" to "Select Prompt" across all interfaces
+- **Documentation**: Synchronized command names and descriptions in README files and documentation
+
+### Improved
+- **User Experience**: More intuitive command naming that better reflects the actual functionality (opening a selection dialog)
+- **Consistency**: Unified naming convention across codebase, documentation, and user interface
+
 ## [0.1.0] - 2025-08-25
 
 ### Added
@@ -39,7 +50,7 @@ All notable changes to the "cursor-prompt-manager" extension will be documented 
 
 ### Keyboard Shortcuts
 - `Ctrl+Alt+P` (Cmd+Alt+P on Mac) - Open Prompt Manager panel
-- `Ctrl+Shift+P` (Cmd+Shift+P on Mac) - Quick insert prompt
+- `Ctrl+Shift+I` (Cmd+Shift+I on Mac) - Quick select prompt
 
 ### Configuration
 - `promptManager.autoSave` - Automatically save prompts when modified

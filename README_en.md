@@ -7,12 +7,12 @@ A powerful prompt management extension for Cursor IDE that helps developers orga
 - **📝 Prompt Management**: Create, edit, delete, and organize your AI prompts
 - **🗂️ Category System**: Organize prompts into categories for better management
 - **🔍 Search & Filter**: Quickly find prompts with search and category filtering
-- **⚡ Smart Chat Integration**: Automatically load prompts into Cursor's AI chat with one click
+- **⚡ Quick Chat Integration**: One-click to copy prompts to clipboard and open Cursor AI chat interface
 - **🔧 Template Variables**: Support for dynamic variables like `{{selection}}`, `{{filename}}`, etc.
 - **📤 Import/Export**: Backup and share your prompt libraries
 - **📊 Usage Statistics**: Track how often you use each prompt
 - **🎨 Modern UI**: Clean, responsive interface that matches VS Code themes
-- **🗑️ Advanced Deletion**: Multiple ways to delete prompts with confirmation dialogs
+- **🗑️ Safe Deletion**: Right-click and command deletion with confirmation dialogs to prevent accidental deletion
 ## Installation
 
 ### From Source (Development)
@@ -37,9 +37,10 @@ The extension will be available on the VS Code Marketplace once published.
 
 3. **Use Prompts with AI Chat**:
    - Use `Ctrl+Shift+I` (Cmd+Shift+I on Mac) to open the quick picker
-   - Click prompts directly in the Prompt Manager panel to load into chat
-   - Prompts are automatically copied to clipboard and loaded into Cursor's AI chat
-   - Fallback option to insert into editor if chat integration fails
+   - Click prompts directly in the Prompt Manager panel
+   - Prompts are automatically copied to clipboard and Cursor's AI chat opens
+   - Press `Cmd+V` (or `Ctrl+V`) to paste the prompt in the chat interface
+   - Alternative option to insert into editor is also available
 
 ## Default Prompts
 
@@ -62,7 +63,7 @@ Use these variables in your prompts for dynamic content:
 ## Commands
 
 - `Prompt Manager: Open Panel` - Open the prompt management panel
-- `Prompt Manager: Insert Prompt` - Quick picker to load prompts into chat or editor
+- `Prompt Manager: Select Prompt` - Quick picker to copy prompts to clipboard and open chat or insert into editor
 - `Prompt Manager: Create New Prompt` - Create a new prompt
 - `Prompt Manager: Import Prompts` - Import prompts from JSON file
 - `Prompt Manager: Export Prompts` - Export prompts to JSON file
@@ -71,8 +72,8 @@ Use these variables in your prompts for dynamic content:
 ## Keyboard Shortcuts
 
 - `Ctrl+Alt+P` (Cmd+Alt+P) - Open Prompt Manager panel
-- `Ctrl+Shift+I` (Cmd+Shift+I) - Quick picker to load prompts into chat
-- Right-click in editor → "Insert Prompt" - Context menu access
+- `Ctrl+Shift+I` (Cmd+Shift+I) - Quick picker to copy prompts and open chat interface
+- Right-click in editor → "Select Prompt" - Context menu access
 
 ## Configuration
 
@@ -144,11 +145,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Recent Updates
 
 ### v0.1.0 Features
-- ✅ **Smart Chat Integration**: Prompts automatically load into Cursor's AI chat
+- ✅ **Quick Chat Integration**: Automatically copy prompts to clipboard and open Cursor's AI chat interface
 - ✅ **Improved Keyboard Shortcuts**: Changed to `Ctrl+Shift+I` to avoid conflicts
-- ✅ **Enhanced Deletion**: Multiple deletion methods with confirmation dialogs
-- ✅ **Clipboard Integration**: Automatic copying for manual paste scenarios
-- ✅ **Fallback Handling**: Graceful degradation when chat integration fails
+- ✅ **Safe Deletion**: Right-click and command deletion with confirmation dialogs to prevent accidental deletion
+- ✅ **Clipboard Integration**: Automatic copying feature, users just need to paste
+- ✅ **Fallback Handling**: Editor insertion available as alternative option
 
 ## Roadmap
 
@@ -158,7 +159,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [ ] Multi-language support
 - [ ] Advanced variable system
 - [ ] Prompt templates marketplace
-- [ ] Enhanced chat integration with better API support
+- [ ] True one-click automatic chat integration (waiting for Cursor API support)
 
 ## Support
 
