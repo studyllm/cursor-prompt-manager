@@ -408,6 +408,94 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                 border: 1px solid var(--vscode-notifications-border);
             }
 
+            .variable-help {
+                margin-bottom: var(--spacing-md);
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: var(--border-radius);
+                background-color: var(--vscode-editor-background);
+            }
+
+            .variable-help-header {
+                padding: var(--spacing-sm) var(--spacing-md);
+                background-color: var(--vscode-list-hoverBackground);
+                border-bottom: 1px solid var(--vscode-panel-border);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 0.9em;
+                font-weight: 500;
+            }
+
+            .variable-help-header:hover {
+                background-color: var(--vscode-list-activeSelectionBackground);
+            }
+
+            .variable-help-content {
+                padding: var(--spacing-md);
+                display: none;
+                font-size: 0.85em;
+                line-height: 1.5;
+            }
+
+            .variable-help-content.expanded {
+                display: block;
+            }
+
+            .help-section {
+                margin-bottom: var(--spacing-md);
+            }
+
+            .help-section h4 {
+                margin: 0 0 var(--spacing-xs) 0;
+                color: var(--vscode-textLink-foreground);
+                font-size: 0.9em;
+            }
+
+            .help-examples {
+                background-color: var(--vscode-textCodeBlock-background);
+                padding: var(--spacing-sm);
+                border-radius: var(--border-radius);
+                margin: var(--spacing-xs) 0;
+                font-family: var(--vscode-editor-font-family);
+                white-space: pre-wrap;
+                border-left: 3px solid var(--vscode-textLink-foreground);
+            }
+
+            .variable-list {
+                list-style: none;
+                padding: 0;
+                margin: var(--spacing-xs) 0;
+            }
+
+            .variable-list li {
+                padding: var(--spacing-xs) 0;
+                border-bottom: 1px solid var(--vscode-panel-border);
+            }
+
+            .variable-list li:last-child {
+                border-bottom: none;
+            }
+
+            .variable-name {
+                font-family: var(--vscode-editor-font-family);
+                color: var(--vscode-textLink-foreground);
+                font-weight: 500;
+            }
+
+            .variable-desc {
+                color: var(--vscode-descriptionForeground);
+                margin-left: var(--spacing-md);
+            }
+
+            .chevron {
+                transition: transform 0.2s ease;
+            }
+
+            .chevron.expanded {
+                transform: rotate(90deg);
+            }
+
             @media (max-width: 600px) {
                 .form-row {
                     grid-template-columns: 1fr;
@@ -473,11 +561,159 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                         <label for="content">提示词内容 *</label>
                         <span class="hint">支持 Markdown 格式</span>
                     </div>
+                    
+                    <div class="variable-help">
+                        <div class="variable-help-header" onclick="toggleVariableHelp()">
+                            <span>📖 变量使用说明与示例</span>
+                            <span class="chevron" id="helpChevron">▶</span>
+                        </div>
+                        <div class="variable-help-content" id="variableHelpContent">
+                            <div class="help-section">
+                                <h4>🔧 系统变量（自动可用）</h4>
+                                <ul class="variable-list">
+                                    <li><span class="variable-name">{{selection}}</span><span class="variable-desc">当前选中的文本</span></li>
+                                    <li><span class="variable-name">{{filename}}</span><span class="variable-desc">当前文件名</span></li>
+                                    <li><span class="variable-name">{{filepath}}</span><span class="variable-desc">当前文件路径</span></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="help-section">
+                                <h4>💡 使用示例</h4>
+                                <div class="help-examples"># 代码分析专家
+
+你是一位资深的代码审查专家，请帮我分析以下代码：
+
+## 代码内容
+{{selection}}
+
+## 文件信息
+- 文件名：{{filename}}
+- 文件路径：{{filepath}}
+
+## 分析要求
+请从以下角度进行深入分析：
+1. 代码质量和规范性
+2. 性能优化建议
+3. 安全性检查
+4. 可维护性评估
+
+请提供具体的改进建议和最佳实践。</div>
+                            </div>
+                            
+                            <div class="help-section">
+                                <h4>🎯 自定义变量示例</h4>
+                                <div class="help-examples"># {{role}}专业助手
+
+你是一位专业的{{role}}，拥有丰富的实战经验和深厚的理论基础。
+
+## 任务目标
+{{task}}
+
+## 分析内容
+{{selection}}
+
+## 上下文信息
+- 当前文件：{{filename}}
+- 文件路径：{{filepath}}
+
+## 输出要求
+- 使用语言：{{language}}
+- 详细程度：{{detail_level}}
+- 目标受众：{{audience}}
+- 输出格式：{{output_format}}
+
+## 特殊要求
+{{special_requirements}}
+
+请基于以上信息，提供专业、准确、实用的解决方案。</div>
+                                <p style="margin-top: var(--spacing-xs); color: var(--vscode-descriptionForeground);">
+                                    💡 提示：保存提示词后，可以在变量管理中为 {{role}}、{{task}} 等添加自定义变量定义
+                                </p>
+                            </div>
+                            
+                            <div class="help-section">
+                                <h4>📝 更多模板示例</h4>
+                                <div class="help-examples"># 🔍 代码审查专家模板
+你是一位资深的代码审查专家，请对以下代码进行全面审查：
+
+## 待审查代码
+{{selection}}
+
+## 文件信息
+- 文件名：{{filename}}
+- 文件路径：{{filepath}}
+
+## 审查维度
+1. **代码质量**：命名规范、代码结构、注释完整性
+2. **性能优化**：算法效率、内存使用、执行速度
+3. **安全性检查**：潜在漏洞、输入验证、权限控制
+4. **可维护性**：代码复用、模块化程度、扩展性
+5. **最佳实践**：设计模式、行业标准、团队规范
+
+## 输出要求
+- 指出具体问题并提供改进建议
+- 给出优化后的代码示例
+- 评估风险等级（高/中/低）
+- 提供学习资源推荐
+
+---
+
+# 🌐 多语言翻译助手模板  
+你是一位专业的{{source_language}}-{{target_language}}翻译专家。
+
+## 翻译内容
+{{text_to_translate}}
+
+## 翻译要求
+- 原文语言：{{source_language}}
+- 目标语言：{{target_language}}
+- 应用场景：{{context}}
+- 语言风格：{{style}}
+
+## 质量标准
+- 准确传达原意，避免遗漏或曲解
+- 符合目标语言的表达习惯
+- 适应具体使用场景和受众
+- 保持专业术语的准确性
+
+请提供高质量的翻译结果。
+
+---
+
+# 🎓 个性化学习助手模板
+你是一位经验丰富的{{subject}}教育专家。
+
+## 学习目标
+我想深入理解：{{concept}}
+
+## 学习者背景
+- 当前水平：{{current_level}}
+- 相关经验：{{background}}
+- 学习目的：{{learning_goal}}
+
+## 教学要求
+- 解释深度：{{depth}}
+- 教学风格：{{explanation_style}}
+- 举例偏好：{{example_preference}}
+
+## 期望输出
+1. 概念的清晰定义和核心要点
+2. 通俗易懂的类比解释
+3. 实际应用场景和案例
+4. 进阶学习路径建议
+5. 相关资源推荐
+
+请根据我的背景定制学习内容。</div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="toolbar">
                         <button type="button" class="toolbar-button" onclick="insertTemplate('role')">👤 角色设定</button>
                         <button type="button" class="toolbar-button" onclick="insertTemplate('task')">📋 任务描述</button>
                         <button type="button" class="toolbar-button" onclick="insertTemplate('example')">💡 示例</button>
                         <button type="button" class="toolbar-button" onclick="insertTemplate('constraint')">⚠️ 约束条件</button>
+                        <button type="button" class="toolbar-button" onclick="insertTemplate('variable')">🔧 变量模板</button>
                         <button type="button" class="toolbar-button" onclick="togglePreview()">👁️ 预览</button>
                     </div>
                     <textarea id="content" name="content" required placeholder="输入你的提示词内容...">${prompt.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
@@ -661,8 +897,6 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                                   fieldName === 'content' ? '请输入内容' : '';
                 } else if (fieldName === 'title' && value.length > 100) {
                     errorMessage = '标题不能超过100个字符';
-                } else if (fieldName === 'content' && value.length < 10) {
-                    errorMessage = '内容至少需要10个字符';
                 }
 
                 if (errorMessage) {
@@ -708,10 +942,11 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
             function insertTemplate(type) {
                 const content = document.getElementById('content');
                 const templates = {
-                    role: '# 角色设定\\n你是一个专业的...\\n\\n',
-                    task: '# 任务描述\\n请帮我...\\n\\n',
-                    example: '# 示例\\n输入：\\n输出：\\n\\n',
-                    constraint: '# 约束条件\\n- 请确保...\\n- 注意...\\n\\n'
+                    role: '# 角色设定\\n你是一位经验丰富的软件开发专家，具有以下特质：\\n- 拥有10+年的全栈开发经验\\n- 精通多种编程语言和框架\\n- 擅长代码架构设计和性能优化\\n- 注重代码质量、可维护性和最佳实践\\n- 能够用简洁明了的方式解释复杂的技术概念\\n\\n',
+                    task: '# 任务描述\\n请帮我完成以下任务：\\n\\n## 主要目标\\n[描述你希望AI完成的核心任务]\\n\\n## 具体要求\\n1. [具体要求1]\\n2. [具体要求2]\\n3. [具体要求3]\\n\\n## 期望输出\\n[描述你期望的输出格式和内容]\\n\\n',
+                    example: '# 示例\\n\\n## 输入示例\\n\\\`\\\`\\\`\\n[这里放置输入示例，可以是代码、文本或其他格式]\\n\\\`\\\`\\\`\\n\\n## 期望输出\\n\\\`\\\`\\\`\\n[这里放置期望的输出示例，展示理想的回答格式]\\n\\\`\\\`\\\`\\n\\n## 说明\\n- 输入特点：[解释输入的特点]\\n- 输出要求：[解释输出的要求]\\n- 处理重点：[说明处理的重点]\\n\\n',
+                    constraint: '# 约束条件\\n\\n## 输出格式要求\\n- 使用中文回答\\n- 保持专业和准确的语调\\n- 提供具体可操作的建议\\n\\n## 内容要求\\n- 确保信息的准确性和时效性\\n- 避免过于复杂的技术术语\\n- 提供实际可行的解决方案\\n\\n## 处理原则\\n- 优先考虑代码的可读性和维护性\\n- 遵循业界最佳实践和标准\\n- 注意安全性和性能影响\\n\\n',
+                    variable: '你是一个{{role}}专家，请帮我{{task}}。\\n\\n## 分析目标\\n{{selection}}\\n\\n## 文件信息\\n- 文件名：{{filename}}\\n- 文件路径：{{filepath}}\\n\\n## 处理要求\\n- 输出语言：{{language}}\\n- 详细程度：{{detail_level}}\\n- 目标受众：{{audience}}\\n\\n请按照以上要求完成任务，并提供具体可操作的建议。'
                 };
 
                 const template = templates[type];
@@ -726,6 +961,22 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                     
                     hasUnsavedChanges = true;
                     updateWordCount();
+                }
+            }
+
+            // Toggle variable help section
+            function toggleVariableHelp() {
+                const content = document.getElementById('variableHelpContent');
+                const chevron = document.getElementById('helpChevron');
+                
+                if (content.classList.contains('expanded')) {
+                    content.classList.remove('expanded');
+                    chevron.classList.remove('expanded');
+                    chevron.textContent = '▶';
+                } else {
+                    content.classList.add('expanded');
+                    chevron.classList.add('expanded');
+                    chevron.textContent = '▼';
                 }
             }
 
@@ -902,7 +1153,12 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Register the tree data provider
     const promptProvider = new PromptProvider(promptManager);
-    vscode.window.registerTreeDataProvider('promptManager', promptProvider);
+    const treeDataProvider = vscode.window.registerTreeDataProvider('promptManager', promptProvider);
+    
+    // 确保资源在扩展停用时被清理
+    context.subscriptions.push(treeDataProvider);
+    context.subscriptions.push({ dispose: () => promptManager.dispose() });
+    context.subscriptions.push({ dispose: () => promptProvider.dispose() });
     
     // Debug: Check if prompts are loaded
     setTimeout(async () => {
@@ -938,34 +1194,134 @@ export function activate(context: vscode.ExtensionContext) {
             });
 
             if (selected) {
-                // Copy to clipboard
-                await vscode.env.clipboard.writeText(selected.prompt.content);
-                
-                // Show options without auto-inserting into active editor
+                // Show options first without processing variables yet
                 const action = await vscode.window.showInformationMessage(
-                    `Prompt "${selected.prompt.title}" copied to clipboard`,
+                    `Selected prompt: "${selected.prompt.title}"`,
                     'Paste in Chat',
                     'Insert to Editor'
                 );
                 
                 if (action === 'Paste in Chat') {
                     try {
-                        await vscode.commands.executeCommand('workbench.action.chat.open');
-                        vscode.window.showInformationMessage('Press Cmd+V to paste in chat');
+                        const editor = vscode.window.activeTextEditor;
+                        let processedContent = selected.prompt.content;
+                        let variableCount = 0;
+                        
+                        console.log('🔧 Paste in Chat - Starting with prompt:', {
+                            title: selected.prompt.title,
+                            originalContent: selected.prompt.content,
+                            hasEditor: !!editor
+                        });
+                        
+                        if (editor) {
+                            console.log('🔧 Paste in Chat - Editor info:', {
+                                uri: editor.document.uri.toString(),
+                                selection: editor.selection,
+                                hasSelection: !editor.selection.isEmpty
+                            });
+                            
+                            // Always process system variables first
+                            console.log('🔧 Paste in Chat - About to process system variables...');
+                            processedContent = promptManager.processSystemVariables(selected.prompt.content, editor);
+                            console.log('🔧 Paste in Chat - After system variables:', JSON.stringify(processedContent));
+                            
+                            // Count system variables that were processed
+                            const systemVariables = ['{{selection}}', '{{filename}}', '{{filepath}}'];
+                            for (const sysVar of systemVariables) {
+                                if (selected.prompt.content.includes(sysVar)) {
+                                    variableCount++;
+                                }
+                            }
+                            console.log('🔧 Paste in Chat - System variable count:', variableCount);
+                            
+                            // Process custom variables if any exist
+                            const hasCustomVariables = selected.prompt.variables && selected.prompt.variables.length > 0;
+                            console.log('🔧 Paste in Chat - Has custom variables:', hasCustomVariables);
+                            if (hasCustomVariables) {
+                                console.log('🔧 Paste in Chat - Processing custom variables:', selected.prompt.variables);
+                                processedContent = await promptManager.processVariablesWithWebview(processedContent, selected.prompt.variables, editor);
+                                console.log('🔧 Paste in Chat - After custom variables:', JSON.stringify(processedContent));
+                                variableCount += selected.prompt.variables.length;
+                            }
+                        } else {
+                            console.log('🔧 Paste in Chat - No active editor, using original content');
+                        }
+                        
+                        console.log('🔧 Paste in Chat - Final processed content:', JSON.stringify(processedContent));
+                        console.log('🔧 Paste in Chat - Total variables processed:', variableCount);
+                        
+                        // Copy processed content to clipboard
+                        await vscode.env.clipboard.writeText(processedContent);
+                        console.log('🔧 Paste in Chat - Content copied to clipboard successfully');
+                        
+                        // Try different chat commands in order of preference
+                        const chatCommands = [
+                            'workbench.action.chat.open',
+                            'workbench.panel.chat.view.copilot.focus', 
+                            'workbench.action.chat.openInSidebar',
+                            'workbench.view.extension.github-copilot-chat',
+                            'cursor.openChat',
+                            'chat.open'
+                        ];
+                        
+                        let chatOpened = false;
+                        for (const command of chatCommands) {
+                            try {
+                                await vscode.commands.executeCommand(command);
+                                console.log(`🔧 Paste in Chat - Successfully opened chat with command: ${command}`);
+                                chatOpened = true;
+                                break;
+                            } catch (cmdError) {
+                                console.log(`🔧 Paste in Chat - Command '${command}' not available`);
+                            }
+                        }
+                        
+                        const variableInfo = variableCount > 0 ? ` (已处理 ${variableCount} 个变量)` : '';
+                        if (chatOpened) {
+                            vscode.window.showInformationMessage(`Press Cmd+V to paste in chat${variableInfo}`);
+                        } else {
+                            vscode.window.showInformationMessage(`Content copied to clipboard! Open chat manually and paste (Cmd+V)${variableInfo}`);
+                        }
+                        console.log('🔧 Paste in Chat - Completed successfully');
                     } catch (error) {
+                        console.error('🚨 Paste in Chat - Error occurred:', error);
+                        // Fallback: copy original content
+                        await vscode.env.clipboard.writeText(selected.prompt.content);
                         vscode.window.showInformationMessage('Please open chat and paste the prompt (Cmd+V)');
                     }
                 } else if (action === 'Insert to Editor') {
-                    let editor = vscode.window.activeTextEditor;
-                    if (!editor) {
-                        const document = await vscode.workspace.openTextDocument({
-                            content: '',
-                            language: 'plaintext'
-                        });
-                        editor = await vscode.window.showTextDocument(document);
+                    try {
+                        let editor = vscode.window.activeTextEditor;
+                        if (!editor) {
+                            const document = await vscode.workspace.openTextDocument({
+                                content: '',
+                                language: 'plaintext'
+                            });
+                            editor = await vscode.window.showTextDocument(document);
+                        }
+                        
+                        // Count variables that will be processed
+                        let variableCount = 0;
+                        const systemVariables = ['{{selection}}', '{{filename}}', '{{filepath}}'];
+                        for (const sysVar of systemVariables) {
+                            if (selected.prompt.content.includes(sysVar)) {
+                                variableCount++;
+                            }
+                        }
+                        if (selected.prompt.variables && selected.prompt.variables.length > 0) {
+                            variableCount += selected.prompt.variables.length;
+                        }
+                        
+                        // Process variables in real-time with the target editor
+                        await promptManager.insertPrompt(selected.prompt, editor);
+                        
+                        // Show success message with variable info
+                        const variableInfo = variableCount > 0 ? ` (已处理 ${variableCount} 个变量)` : '';
+                        vscode.window.showInformationMessage(`Prompt "${selected.prompt.title}" inserted into editor${variableInfo}`);
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                        vscode.window.showErrorMessage(`插入提示词失败: ${errorMessage}`);
                     }
-                    await promptManager.insertPrompt(selected.prompt, editor);
-                    vscode.window.showInformationMessage(`Prompt "${selected.prompt.title}" inserted into editor`);
                 }
             }
         }),
@@ -988,24 +1344,84 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
 
-                // Copy to clipboard
-                await vscode.env.clipboard.writeText(prompt.content);
+                // 获取当前编辑器，用于处理所有变量
+                let editor = vscode.window.activeTextEditor;
+                if (!editor) {
+                    const document = await vscode.workspace.openTextDocument({
+                        content: '',
+                        language: 'plaintext'
+                    });
+                    editor = await vscode.window.showTextDocument(document);
+                }
+
+                console.log('🔧 insertSpecificPrompt - Starting with prompt:', {
+                    title: prompt.title,
+                    originalContent: prompt.content,
+                    hasCustomVariables: !!(prompt.variables && prompt.variables.length > 0),
+                    hasEditor: !!editor
+                });
+
+                // 先处理系统变量（{{filename}}, {{selection}}, {{filepath}}）
+                let processedContent = promptManager.processSystemVariables(prompt.content, editor);
+                console.log('🔧 insertSpecificPrompt - After system variables:', processedContent);
+
+                // 检查是否包含自定义变量
+                const hasCustomVariables = prompt.variables && prompt.variables.length > 0;
+                let variableCount = 0;
+
+                // 如果包含自定义变量，再处理自定义变量
+                if (hasCustomVariables) {
+                    console.log('🔧 insertSpecificPrompt - Processing custom variables:', prompt.variables);
+                    processedContent = await promptManager.processVariablesWithWebview(processedContent, prompt.variables, editor);
+                    variableCount = prompt.variables.length;
+                    console.log('🔧 insertSpecificPrompt - After custom variables:', processedContent);
+                } else {
+                    console.log('🔧 insertSpecificPrompt - No custom variables to process');
+                }
+
+                console.log('🔧 insertSpecificPrompt - Final processed content:', processedContent);
+
+                // Copy processed content to clipboard
+                await vscode.env.clipboard.writeText(processedContent);
                 
-                // Show options without auto-inserting into active editor
+                // 根据是否有变量显示不同的消息
+                const totalVariableCount = variableCount + (processedContent !== prompt.content ? 1 : 0); // 系统变量可能也有
+                const variableInfo = totalVariableCount > 0 ? ` (已处理 ${totalVariableCount} 个变量)` : '';
                 const action = await vscode.window.showInformationMessage(
-                    `Prompt "${prompt.title}" copied to clipboard`,
-                    'Paste in Chat',
-                    'Insert to Editor'
+                    `提示词 "${prompt.title}" 已复制到剪贴板${variableInfo}`,
+                    '粘贴到聊天',
+                    '插入到编辑器'
                 );
                 
-                if (action === 'Paste in Chat') {
-                    try {
-                        await vscode.commands.executeCommand('workbench.action.chat.open');
-                        vscode.window.showInformationMessage('Press Cmd+V to paste in chat');
-                    } catch (error) {
-                        vscode.window.showInformationMessage('Please open chat and paste the prompt (Cmd+V)');
+                if (action === '粘贴到聊天') {
+                    // Try different chat commands in order of preference
+                    const chatCommands = [
+                        'workbench.action.chat.open',
+                        'workbench.panel.chat.view.copilot.focus', 
+                        'workbench.action.chat.openInSidebar',
+                        'workbench.view.extension.github-copilot-chat',
+                        'cursor.openChat',
+                        'chat.open'
+                    ];
+                    
+                    let chatOpened = false;
+                    for (const command of chatCommands) {
+                        try {
+                            await vscode.commands.executeCommand(command);
+                            console.log(`🔧 insertSpecificPrompt - Successfully opened chat with command: ${command}`);
+                            chatOpened = true;
+                            break;
+                        } catch (cmdError) {
+                            console.log(`🔧 insertSpecificPrompt - Command '${command}' not available`);
+                        }
                     }
-                } else if (action === 'Insert to Editor') {
+                    
+                    if (chatOpened) {
+                        vscode.window.showInformationMessage('按 Cmd+V 粘贴到聊天窗口');
+                    } else {
+                        vscode.window.showInformationMessage('请打开聊天窗口并粘贴提示词 (Cmd+V)');
+                    }
+                } else if (action === '插入到编辑器') {
                     try {
                         let editor = vscode.window.activeTextEditor;
                         if (!editor) {
@@ -1015,17 +1431,27 @@ export function activate(context: vscode.ExtensionContext) {
                             });
                             editor = await vscode.window.showTextDocument(document);
                         }
-                        await promptManager.insertPrompt(prompt, editor);
-                        vscode.window.showInformationMessage(`Prompt "${prompt.title}" inserted into editor`);
+                        
+                        // 直接插入处理过的内容，不需要再次处理变量
+                        const position = editor.selection.active;
+                        await editor.edit(editBuilder => {
+                            editBuilder.insert(position, processedContent);
+                        });
+                        
+                        // 更新使用次数
+                        prompt.usageCount++;
+                        await promptManager.updatePrompt(prompt);
+                        
+                        vscode.window.showInformationMessage(`提示词 "${prompt.title}" 已插入到编辑器${variableInfo}`);
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                        vscode.window.showErrorMessage(`Failed to insert prompt: ${errorMessage}`);
+                        vscode.window.showErrorMessage(`插入提示词失败: ${errorMessage}`);
                     }
                 }
             } catch (error) {
                 console.error('Error in insertSpecificPrompt:', error);
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                vscode.window.showErrorMessage(`Failed to process prompt: ${errorMessage}`);
+                vscode.window.showErrorMessage(`处理提示词失败: ${errorMessage}`);
             }
         }),
 
@@ -1152,6 +1578,194 @@ export function activate(context: vscode.ExtensionContext) {
                     promptProvider.refresh();
                     vscode.window.showInformationMessage(`Prompt "${selected.prompt.title}" deleted`);
                 }
+            }
+        }),
+
+        // 简单的系统变量测试
+        vscode.commands.registerCommand('promptManager.testSystemVariables', async () => {
+            try {
+                const testContent = `你是一名专业的技术文档撰写和维护人员。
+你的任务是根据最新的项目源码和 README.md 文件，对文章 {{filename}} 进行更新和同步。
+
+当前选中的代码：
+{{selection}}
+
+文件路径：{{filepath}}
+
+这是一个测试提示词，用于验证系统变量是否能够正确替换。`;
+
+                const editor = vscode.window.activeTextEditor;
+                if (!editor) {
+                    vscode.window.showErrorMessage('请先打开一个文件');
+                    return;
+                }
+
+                // 使用空的 variables 数组来测试自动变量识别
+                const processedContent = await promptManager.processVariables(testContent, [], editor);
+                
+                // 复制到剪贴板
+                await vscode.env.clipboard.writeText(processedContent);
+                
+                vscode.window.showInformationMessage('测试完成！处理后的内容已复制到剪贴板。请粘贴查看系统变量是否被正确替换。');
+            } catch (error) {
+                console.error('测试系统变量时出错:', error);
+                vscode.window.showErrorMessage(`测试失败: ${error}`);
+            }
+        }),
+
+        // 直接测试系统变量替换 - 不通过processVariables
+        vscode.commands.registerCommand('promptManager.testSystemVariablesDirect', async () => {
+            try {
+                const testContent = `📝 系统变量测试
+                
+🔍 当前选中文本: {{selection}}
+📁 文件名: {{filename}} 
+📂 文件路径: {{filepath}}
+
+✅ 如果看到这些变量被替换，说明功能正常工作！`;
+
+                const editor = vscode.window.activeTextEditor;
+                if (!editor) {
+                    vscode.window.showErrorMessage('请先打开一个文件并选中一些文本');
+                    return;
+                }
+
+                console.log('🚀 开始测试直接系统变量替换');
+                
+                // 直接调用 processSystemVariables 方法
+                const processedContent = promptManager.processSystemVariables(testContent, editor);
+                
+                // 复制到剪贴板
+                await vscode.env.clipboard.writeText(processedContent);
+                
+                // 显示结果对比
+                vscode.window.showInformationMessage(
+                    '直接测试完成！处理后的内容已复制到剪贴板。查看开发者控制台的详细日志。',
+                    '粘贴查看结果',
+                    '插入到编辑器'
+                ).then(action => {
+                    if (action === '插入到编辑器') {
+                        const position = editor.selection.active;
+                        editor.edit(editBuilder => {
+                            editBuilder.insert(position, '\n\n' + processedContent);
+                        });
+                    }
+                });
+                
+            } catch (error) {
+                console.error('🚨 直接测试系统变量时出错:', error);
+                vscode.window.showErrorMessage(`直接测试失败: ${error}`);
+            }
+        }),
+
+        // 强制刷新命令
+        vscode.commands.registerCommand('promptManager.forceRefresh', async () => {
+            try {
+                await promptManager.forceSync();
+                promptProvider.refresh();
+                vscode.window.showInformationMessage('✅ 数据已强制刷新');
+                console.log('Manual refresh completed');
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : '未知错误';
+                vscode.window.showErrorMessage(`刷新失败: ${errorMessage}`);
+                console.error('Manual refresh failed:', error);
+            }
+        }),
+
+        vscode.commands.registerCommand('promptManager.createTestTemplate', async () => {
+            const testPrompt = {
+                title: '测试变量模板',
+                content: `# {{title}}
+
+## 项目信息
+- 项目名称: {{projectName}}
+- 开发者: {{developer}}
+- 开始日期: {{startDate}}
+- 优先级: {{priority}}
+- 项目类型: {{projectType}}
+
+## 描述
+{{description}}
+
+## 当前选中的代码
+\`\`\`
+{{selection}}
+\`\`\`
+
+## 文件信息
+- 文件名: {{filename}}
+- 文件路径: {{filepath}}
+
+## 数量信息
+预计工作时间: {{estimatedHours}} 小时`,
+                description: '用于测试各种变量类型的模板',
+                category: '测试',
+                tags: ['测试', '变量'],
+                variables: [
+                    {
+                        name: 'title',
+                        type: 'text' as const,
+                        description: '请输入标题',
+                        placeholder: '输入标题...',
+                        required: true
+                    },
+                    {
+                        name: 'projectName',
+                        type: 'text' as const,
+                        description: '项目名称',
+                        defaultValue: 'MyProject',
+                        required: true
+                    },
+                    {
+                        name: 'developer',
+                        type: 'text' as const,
+                        description: '开发者姓名',
+                        placeholder: '请输入开发者姓名'
+                    },
+                    {
+                        name: 'startDate',
+                        type: 'date' as const,
+                        description: '项目开始日期',
+                        required: true
+                    },
+                    {
+                        name: 'priority',
+                        type: 'select' as const,
+                        description: '项目优先级',
+                        options: ['高', '中', '低'],
+                        defaultValue: '中',
+                        required: true
+                    },
+                    {
+                        name: 'projectType',
+                        type: 'select' as const,
+                        description: '项目类型',
+                        options: ['Web应用', '移动应用', '桌面应用', '库/框架', '其他'],
+                        required: true
+                    },
+                    {
+                        name: 'description',
+                        type: 'multiline' as const,
+                        description: '项目详细描述',
+                        placeholder: '请输入项目的详细描述...',
+                        required: true
+                    },
+                    {
+                        name: 'estimatedHours',
+                        type: 'number' as const,
+                        description: '预计工作时间（小时）',
+                        placeholder: '输入数字',
+                        defaultValue: '8'
+                    }
+                ]
+            };
+
+            try {
+                await promptManager.createPrompt(testPrompt);
+                promptProvider.refresh();
+                vscode.window.showInformationMessage('测试模板创建成功！');
+            } catch (error) {
+                vscode.window.showErrorMessage(`创建测试模板失败: ${error instanceof Error ? error.message : '未知错误'}`);
             }
         })
     ];

@@ -16,7 +16,10 @@ export interface Variable {
     name: string;
     description?: string;
     defaultValue?: string;
-    type: 'text' | 'selection' | 'filename' | 'filepath' | 'custom';
+    type: 'text' | 'multiline' | 'select' | 'number' | 'date' | 'selection' | 'filename' | 'filepath' | 'custom';
+    placeholder?: string;
+    required?: boolean;
+    options?: string[]; // For select type
 }
 
 export interface Category {

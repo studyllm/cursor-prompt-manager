@@ -5,8 +5,14 @@ import { Prompt } from './types';
 export class PromptProvider implements vscode.TreeDataProvider<PromptItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<PromptItem | undefined | null | void> = new vscode.EventEmitter<PromptItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<PromptItem | undefined | null | void> = this._onDidChangeTreeData.event;
+    private dataChangeListener: vscode.Disposable;
 
-    constructor(private promptManager: PromptManager) {}
+    constructor(private promptManager: PromptManager) {
+        // 监听PromptManager的数据变化事件
+        this.dataChangeListener = this.promptManager.onDataChanged(() => {
+            this.refresh();
+        });
+    }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -35,6 +41,12 @@ export class PromptProvider implements vscode.TreeDataProvider<PromptItem> {
             return prompts.map(prompt => new PromptTreeItem(prompt));
         }
         return [];
+    }
+
+    // 清理资源
+    dispose(): void {
+        this.dataChangeListener.dispose();
+        this._onDidChangeTreeData.dispose();
     }
 }
 
@@ -74,17 +86,44 @@ export class CategoryItem extends PromptItem {
 export class PromptTreeItem extends PromptItem {
     constructor(public readonly prompt: Prompt) {
         super(prompt.title, vscode.TreeItemCollapsibleState.None);
-        this.tooltip = prompt.description || prompt.title;
-        this.description = `${prompt.usageCount} uses`;
-        this.iconPath = prompt.isFavorite 
-            ? new vscode.ThemeIcon('star-full') 
-            : new vscode.ThemeIcon('symbol-text');
+        
+        // Enhanced tooltip with variable information
+        let tooltip = prompt.description || prompt.title;
+        if (prompt.variables && prompt.variables.length > 0) {
+            tooltip += `\n\n📋 包含 ${prompt.variables.length} 个变量:`;
+            prompt.variables.forEach(variable => {
+                tooltip += `\n  • ${variable.name} (${variable.type})`;
+                if (variable.description) {
+                    tooltip += ` - ${variable.description}`;
+                }
+            });
+            tooltip += '\n\n💡 点击时会提示输入变量值';
+        }
+        this.tooltip = tooltip;
+        
+        // Enhanced description with variable count
+        let description = `${prompt.usageCount} 次使用`;
+        if (prompt.variables && prompt.variables.length > 0) {
+            description += ` • ${prompt.variables.length} 个变量`;
+        }
+        this.description = description;
+        
+        // Enhanced icon based on prompt type and content
+        if (prompt.isFavorite) {
+            this.iconPath = new vscode.ThemeIcon('star-full');
+        } else if (prompt.variables && prompt.variables.length > 0) {
+            // 使用特殊图标表示包含变量的提示词
+            this.iconPath = new vscode.ThemeIcon('symbol-parameter', new vscode.ThemeColor('charts.orange'));
+        } else {
+            this.iconPath = new vscode.ThemeIcon('symbol-text');
+        }
+        
         this.contextValue = 'prompt';
         
         // Add command to insert prompt on click
         this.command = {
             command: 'promptManager.insertSpecificPrompt',
-            title: 'Insert Prompt',
+            title: '插入提示词',
             arguments: [prompt]
         };
     }

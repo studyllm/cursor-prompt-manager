@@ -75,6 +75,81 @@ Use these variables in your prompts for dynamic content:
 - `Ctrl+Shift+I` (Cmd+Shift+I) - Quick picker to copy prompts and open chat interface
 - Right-click in editor → "Select Prompt" - Context menu access
 
+## Variable Feature 🎯
+
+The extension supports variables in prompts, making them more flexible and reusable.
+
+### Variable Syntax
+
+Use `{{variableName}}` syntax in prompt content to define variable positions:
+
+```
+Please review the following {{language}} code:
+
+```{{language}}
+{{code}}
+```
+
+Please provide improvement suggestions.
+```
+
+### Variable Types
+
+Supported variable types:
+
+1. **Text Input** (`text`) - Single-line text input
+2. **Multiline Text** (`multiline`) - Multi-line text input
+3. **Select Box** (`select`) - Choose from predefined options
+4. **Number** (`number`) - Number input
+5. **Date** (`date`) - Date picker
+
+### Variable Definition
+
+Define variables in the prompt's `variables` array:
+
+```json
+{
+  "variables": [
+    {
+      "name": "language",
+      "type": "select",
+      "description": "Programming language",
+      "options": ["JavaScript", "Python", "Java"],
+      "required": true
+    },
+    {
+      "name": "code", 
+      "type": "multiline",
+      "description": "Code to review",
+      "required": true
+    }
+  ]
+}
+```
+
+### Variable Properties
+
+- `name` - Variable name (required)
+- `type` - Variable type (required)
+- `description` - Variable description (optional)
+- `required` - Whether required (default false)
+- `placeholder` - Placeholder text (optional)
+- `options` - Options for select type (required for select)
+- `defaultValue` - Default value (optional)
+
+### Using Variable Prompts
+
+1. Click on a prompt containing variables
+2. System displays variable input dialog
+3. Fill in required variable values
+4. Click confirm to insert processed prompt
+
+### Visual Indicators
+
+- Prompts with variables show special orange parameter icon 🔶
+- Prompt description shows variable count
+- Hover tooltip displays detailed variable information
+
 ## Configuration
 
 Access settings via `File > Preferences > Settings` and search for "Prompt Manager":

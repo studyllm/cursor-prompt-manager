@@ -72,6 +72,26 @@
         "command": "promptManager.selectAndDeletePrompt",
         "title": "Delete Prompt...",
         "category": "Prompt Manager"
+      },
+      {
+        "command": "promptManager.createTestTemplate",
+        "title": "Create Test Template",
+        "category": "Prompt Manager"
+      },
+      {
+        "command": "promptManager.forceRefresh",
+        "title": "Force Refresh",
+        "category": "Prompt Manager"
+      },
+      {
+        "command": "promptManager.testSystemVariables",
+        "title": "Test System Variables",
+        "category": "Prompt Manager"
+      },
+      {
+        "command": "promptManager.testSystemVariablesDirect",
+        "title": "Test System Variables (Direct)",
+        "category": "Prompt Manager"
       }
     ],
     "views": {
@@ -127,6 +147,9 @@
         },
         {
           "command": "promptManager.createPrompt"
+        },
+        {
+          "command": "promptManager.createTestTemplate"
         }
       ]
     },
