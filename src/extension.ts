@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as os from 'os';
 import { PromptManager } from './promptManager';
 import { PromptProvider } from './promptProvider';
 
@@ -320,11 +322,30 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                 border-radius: var(--border-radius);
                 cursor: pointer;
                 font-size: 12px;
-                transition: background-color 0.2s ease;
+                transition: all 0.2s ease;
+                position: relative;
+                overflow: hidden;
             }
 
             .toolbar-button:hover {
                 background-color: var(--vscode-button-secondaryHoverBackground);
+                transform: translateY(-1px);
+            }
+            
+            .toolbar-button:active {
+                transform: translateY(0);
+                background-color: var(--vscode-button-background);
+            }
+            
+            .toolbar-button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .toolbar-button.inserting {
+                background-color: var(--vscode-button-background);
+                color: var(--vscode-button-foreground);
             }
 
             .button-group {
@@ -709,12 +730,12 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                     </div>
                     
                     <div class="toolbar">
-                        <button type="button" class="toolbar-button" onclick="insertTemplate('role')">👤 角色设定</button>
-                        <button type="button" class="toolbar-button" onclick="insertTemplate('task')">📋 任务描述</button>
-                        <button type="button" class="toolbar-button" onclick="insertTemplate('example')">💡 示例</button>
-                        <button type="button" class="toolbar-button" onclick="insertTemplate('constraint')">⚠️ 约束条件</button>
-                        <button type="button" class="toolbar-button" onclick="insertTemplate('variable')">🔧 变量模板</button>
-                        <button type="button" class="toolbar-button" onclick="togglePreview()">👁️ 预览</button>
+                        <button type="button" class="toolbar-button">👤 角色设定</button>
+                        <button type="button" class="toolbar-button">📋 任务描述</button>
+                        <button type="button" class="toolbar-button">💡 示例</button>
+                        <button type="button" class="toolbar-button">⚠️ 约束条件</button>
+                        <button type="button" class="toolbar-button">🔧 变量模板</button>
+                        <button type="button" class="toolbar-button">👁️ 预览</button>
                     </div>
                     <textarea id="content" name="content" required placeholder="输入你的提示词内容...">${prompt.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
                     <div class="preview" id="preview" style="display: none;"></div>
@@ -748,6 +769,7 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                 setupCategoryDropdown();
                 setupKeyboardShortcuts();
                 setupValidation();
+                setupToolbarButtons();
                 updateWordCount();
                 
                 // Focus on title for new prompts, content for existing
@@ -876,6 +898,63 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                 content.addEventListener('blur', () => validateField('content'));
             }
 
+            // Toolbar button setup with proper event handling
+            function setupToolbarButtons() {
+                // Remove inline onclick handlers and add proper event listeners
+                const toolbarButtons = document.querySelectorAll('.toolbar-button');
+                toolbarButtons.forEach(button => {
+                    // Remove any existing onclick handlers
+                    button.removeAttribute('onclick');
+                    
+                    // Add proper event listener with enhanced feedback
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        // Prevent double-click by temporarily disabling button
+                        if (this.disabled) {
+                            return;
+                        }
+                        
+                        const buttonText = this.textContent.trim();
+                        
+                        // Add visual feedback for template insertion
+                        if (!buttonText.includes('预览')) {
+                            this.disabled = true;
+                            this.classList.add('inserting');
+                            
+                            // Re-enable after a short delay
+                            setTimeout(() => {
+                                this.disabled = false;
+                                this.classList.remove('inserting');
+                            }, 500);
+                        }
+                        
+                        // Route to appropriate function
+                        try {
+                            if (buttonText.includes('角色设定')) {
+                                insertTemplate('role');
+                            } else if (buttonText.includes('任务描述')) {
+                                insertTemplate('task');
+                            } else if (buttonText.includes('示例')) {
+                                insertTemplate('example');
+                            } else if (buttonText.includes('约束条件')) {
+                                insertTemplate('constraint');
+                            } else if (buttonText.includes('变量模板')) {
+                                insertTemplate('variable');
+                            } else if (buttonText.includes('预览')) {
+                                togglePreview();
+                            }
+                        } catch (error) {
+                            console.error('Error handling toolbar button click:', error);
+                            // Re-enable button on error
+                            this.disabled = false;
+                            this.classList.remove('inserting');
+                        }
+                    });
+                });
+            }
+
             function validateField(fieldName) {
                 let field, value;
                 
@@ -938,9 +1017,25 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                        validateField('content');
             }
 
-            // Template insertion
+            // Template insertion with debounce protection
+            let lastTemplateInsertTime = 0;
+            const TEMPLATE_INSERT_DEBOUNCE = 300; // 300ms debounce
+            
             function insertTemplate(type) {
+                // Debounce protection - prevent rapid clicks
+                const now = Date.now();
+                if (now - lastTemplateInsertTime < TEMPLATE_INSERT_DEBOUNCE) {
+                    console.log('Template insertion debounced');
+                    return;
+                }
+                lastTemplateInsertTime = now;
+                
                 const content = document.getElementById('content');
+                if (!content) {
+                    console.error('Content element not found');
+                    return;
+                }
+                
                 const templates = {
                     role: '# 角色设定\\n你是一位经验丰富的软件开发专家，具有以下特质：\\n- 拥有10+年的全栈开发经验\\n- 精通多种编程语言和框架\\n- 擅长代码架构设计和性能优化\\n- 注重代码质量、可维护性和最佳实践\\n- 能够用简洁明了的方式解释复杂的技术概念\\n\\n',
                     task: '# 任务描述\\n请帮我完成以下任务：\\n\\n## 主要目标\\n[描述你希望AI完成的核心任务]\\n\\n## 具体要求\\n1. [具体要求1]\\n2. [具体要求2]\\n3. [具体要求3]\\n\\n## 期望输出\\n[描述你期望的输出格式和内容]\\n\\n',
@@ -950,17 +1045,39 @@ async function editPromptWithWebView(prompt: any, promptManager: any, promptProv
                 };
 
                 const template = templates[type];
-                if (template) {
-                    const cursorPos = content.selectionStart;
-                    const textBefore = content.value.substring(0, cursorPos);
-                    const textAfter = content.value.substring(cursorPos);
+                if (!template) {
+                    console.error('Template not found:', type);
+                    return;
+                }
+
+                try {
+                    // Store current selection/cursor position
+                    const cursorPos = content.selectionStart || 0;
+                    const selectionEnd = content.selectionEnd || cursorPos;
                     
-                    content.value = textBefore + template + textAfter;
+                    // Get text before and after cursor/selection
+                    const textBefore = content.value.substring(0, cursorPos);
+                    const textAfter = content.value.substring(selectionEnd);
+                    
+                    // Insert template at cursor position (replacing any selected text)
+                    const newContent = textBefore + template + textAfter;
+                    content.value = newContent;
+                    
+                    // Set cursor position after the inserted template
+                    const newCursorPos = cursorPos + template.length;
                     content.focus();
-                    content.setSelectionRange(cursorPos + template.length, cursorPos + template.length);
+                    content.setSelectionRange(newCursorPos, newCursorPos);
+                    
+                    // Trigger change events
+                    const event = new Event('input', { bubbles: true });
+                    content.dispatchEvent(event);
                     
                     hasUnsavedChanges = true;
                     updateWordCount();
+                    
+                    console.log('Template inserted:', type, 'at position', cursorPos);
+                } catch (error) {
+                    console.error('Error inserting template:', error);
                 }
             }
 
@@ -1527,11 +1644,22 @@ export function activate(context: vscode.ExtensionContext) {
         }),
 
         vscode.commands.registerCommand('promptManager.exportPrompts', async () => {
+            // 获取安全的默认保存路径
+            const getDefaultSavePath = (): vscode.Uri => {
+                // 首先尝试使用工作区根目录
+                if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                    return vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, 'prompts.json');
+                }
+                
+                // 如果没有工作区，使用用户主目录
+                return vscode.Uri.file(path.join(os.homedir(), 'prompts.json'));
+            };
+
             const fileUri = await vscode.window.showSaveDialog({
                 filters: {
                     'JSON files': ['json']
                 },
-                defaultUri: vscode.Uri.file('prompts.json')
+                defaultUri: getDefaultSavePath()
             });
 
             if (fileUri) {
